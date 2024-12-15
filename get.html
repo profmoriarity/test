@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Parent Page</title>
+</head>
+
+<body>
+  <!-- Button to open StorageHub and fetch a key -->
+  <button onclick="openStorageHubAndFetchKey('AMBER_FILTERS')">Fetch Key Value</button>
+
+  <script>
+    let storageHubWindow = null; // Reference to the new tab
+
+    // Function to open StorageHub in a new tab and send a get request
+    function openStorageHubAndFetchKey(key) {
+      const storageHubUrl = 'https://secure.m.newegg.com/m/storageHub'; // Update with actual StorageHub URL
+      storageHubWindow = window.open(storageHubUrl, '_blank');
+
+      // Poll to ensure the tab is fully loaded before sending a message
+      const interval = setInterval(() => {
+        if (storageHubWindow) {
+          try {
+            storageHubWindow.postMessage(
+              JSON.stringify({
+                action: 'cross-storage:get',
+                params: { key: key },
+                id: '12346' // Unique ID for this request
+              }),
+              storageHubUrl // Target origin
+            );
+            clearInterval(interval); // Stop polling
+          } catch (err) {
+            console.error('Failed to send message to StorageHub:', err);
+          }
+        }
+      }, 500);
+    }
+
+    // Listener to handle the response from StorageHub
+    window.addEventListener('message', function (event) {
+      const allowedOrigin = 'https://secure.m.newegg.com'; // Validate the origin
+      if (event.origin !== allowedOrigin) {
+        console.warn('Origin not allowed:', event.origin);
+        return;
+      }
+
+      try {
+        const response = JSON.parse(event.data);
+        if (response.error) {
+          console.error('Error from StorageHub:', response.error);
+        } else {
+          console.log('Response from StorageHub:', response.result);
+          // Perform any actions with the fetched data
+          alert(`Fetched Value: ${response.result}`);
+        }
+      } catch (err) {
+        console.error('Failed to parse message:', err);
+      }
+    });
+  </script>
+</body>
+
+</html>
